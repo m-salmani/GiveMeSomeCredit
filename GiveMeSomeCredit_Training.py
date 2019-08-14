@@ -96,6 +96,7 @@ def feature_dist_plot(data, data_nan_drop, feature_list, nan_features):
     :param feature_list: the list of features.
     :param nan_features: the list of features that contain NaN values.
     :return: different plots each of which showing the distribution of the data or log scale of data.
+
     '''
     data_log = pd.DataFrame()
     data_nan_drop_log = pd.DataFrame()
@@ -124,6 +125,7 @@ def outlier_detector(data, feature_list):
         upper_bnd = data_Q3 + 1.5 * IQR
         outlier_idx = (data[feature]<lower_bnd) | (data[feature]>upper_bnd)
         data.loc[outlier_idx,feature] = data[feature].median()
+    data
     return data
 
 
@@ -141,6 +143,7 @@ def feature_augmentation(train_data,test_data,feature_list):
     :param feature_list:
     :return:
     '''
+    # 4- Introducing new features according to the existing ones
     train_data['WeightedPastDue'] = (train_data['NumberOfTimes90DaysLate'] + 2 * train_data[
         'NumberOfTime60-89DaysPastDueNotWorse'] + 3 * train_data['NumberOfTime30-59DaysPastDueNotWorse']) / 6
     test_data['WeightedPastDue'] = (test_data['NumberOfTimes90DaysLate'] + 2 * test_data[
@@ -164,12 +167,13 @@ def GB_Classifier_func(train_X, train_Y, test_X):
                                                min_weight_fraction_leaf=0.0, max_depth=3, init=None,
                                                random_state=None, max_features=None, verbose=1)
     GB_Params = {'loss': ['deviance'], 'n_estimators': (100, 200, 300, 400, 500), 'max_depth': (6, 8,10)}
-    GB_Search = RandomizedSearchCV(estimator=GB_Classifier, param_distributions=GB_Params, n_iter=2, scoring='roc_auc',
+    GB_Search = RandomizedSearchCV(estimator=GB_Classifier, param_distributions=GB_Params, n_iter=10, scoring='roc_auc',
                                    fit_params=None, cv=None, verbose=2).fit(train_X, train_Y)
     GB_Predicts = GB_Search.predict_proba(test_X)
-    GB_Predicts_df = pd.DataFrame({'Probability':GB_Predicts})
+    GB_Predicts_df = pd.DataFrame(np.ndarray.tolist(GB_Predicts[:,1]), columns =['Probability'])
+
     # Saving the trained model
-    GB_Filename = "GB_Classifier.pkl"
+    GB_Filename = "GB_Classifier_updated.pkl"
     with open(GB_Filename, 'wb') as file:
         pickle.dump(GB_Search, file)
     return GB_Predicts_df,GB_Search.best_estimator_
@@ -185,13 +189,13 @@ def RF_Classifier_func(train_X, train_Y, test_X):
     RF_Classifier = RandomForestClassifier(n_estimators=100, criterion='gini', max_depth=None, min_samples_split=2,
                                            min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_leaf_nodes=None,
                                            bootstrap=True, oob_score=False, n_jobs=-1, random_state=None, verbose=1)
-    RF_Params = {'criterion': ['gini'], 'n_estimators': [100, 200, 300, 400,500], 'max_depth': [6, 8, 10]}
-    RF_Search = RandomizedSearchCV(estimator=RF_Classifier, param_distributions=RF_Params, n_iter=2, scoring='roc_auc',
+    RF_Params = {'criterion': ['gini'], 'n_estimators': (100, 200, 300, 400, 500), 'max_depth': (6,8,10)}
+    RF_Search = RandomizedSearchCV(estimator=RF_Classifier, param_distributions=RF_Params, n_iter=10, scoring='roc_auc',
                                    fit_params=None, cv=None, verbose=2).fit(train_X, train_Y)
     RF_Predicts = RF_Search.predict_proba(test_X)
-    RF_Predicts_df = pd.DataFrame({'Probability': RF_Predicts})
+    RF_Predicts_df = pd.DataFrame(np.ndarray.tolist(RF_Predicts[:,1]), columns =['Probability'])
     # Saving the trained model
-    RF_Filename = "RF_Classifier.pkl"
+    RF_Filename = "RF_Classifier_updated.pkl"
     with open(RF_Filename, 'wb') as file:
         pickle.dump(RF_Search, file)
     return RF_Predicts_df,RF_Search.best_estimator_
@@ -199,14 +203,14 @@ def RF_Classifier_func(train_X, train_Y, test_X):
 
 def plot_auc_roc(classifier, train_X, train_Y, nfolds,class_indicator):
     '''
-     This function plots the performance of the models (classifiers) in terms of the ROC and AUC area. 
+     This function plots the performance of the models (classifiers) in terms of the ROC and AUC area.
     :param classifier: the model which is used to predict the output labels (Random Forest and Gradient Boosting in this
      code).
     :param train_X: purified training data; NaN values and outliers are replaced by medians.
-    :param train_Y: corresponding labels that are provided.
-    :param nfolds: the desired number of folding steps.
-    :param class_indicator: a string that distinguishes the classifier to be used in the title of the plots. 
-    :return: plots illustrating the ROC and AUC of each folding step for the desired classifier.
+    :param train_Y: corresponding labeles that are provided.
+    :param nfolds: the desired number of folds.
+    :param class_indicator: A string that distinguished the classifier to be used in the title of the plots.
+    :return: the plots illustrating the ROC curve of each folding step for the desired classifier.
     '''
     i = 0
     d_fold = KFold(nfolds, shuffle=True)
@@ -223,6 +227,7 @@ def plot_auc_roc(classifier, train_X, train_Y, nfolds,class_indicator):
     plt.title('CV ROC curve %s' %class_indicator)
     plt.legend(loc="lower right")
     fig = plt.gcf()
+    fig.set_size_inches(15, 5)
     plt.show()
 
 
@@ -232,7 +237,6 @@ def plot_auc_roc(classifier, train_X, train_Y, nfolds,class_indicator):
 [train_data,train_data_nan_drop] = nan_rmv_indication(train_data, train_nan_features)
 [test_data, test_data_nan_drop] = nan_rmv_indication(test_data, test_nan_features)
 # feature_dist_plot(train_data,train_data_nan_drop,feature_list, train_nan_features)
-
 
 # For features with narrow distributions log-scale distribution provides better insights
 log_feature_list = ['RevolvingUtilizationOfUnsecuredLines', 'NumberOfTime30-59DaysPastDueNotWorse', 'DebtRatio',
@@ -252,18 +256,10 @@ train_Y = train_labels
 test_X = test_data.drop(['SeriousDlqin2yrs', 'Unnamed: 0'], axis=1, inplace=False)
 test_Y = test_labels
 
+[RF_Predicts_df,best_RF_Classifier] = RF_Classifier_func(train_X, train_Y, test_X)
+[GB_Predicts_df,best_GB_Classifier] = GB_Classifier_func(train_X, train_Y, test_X)
+plot_auc_roc(best_RF_Classifier, train_X, train_Y, nfolds=10,class_indicator ='Random Forest Classifier')
+plot_auc_roc(best_GB_Classifier, train_X, train_Y, nfolds=10,class_indicator ='Gradient Boosting Classifier')
 
-# [GB_Predicts,best_GB_Classifier] = GB_Classifier_func(train_X, train_Y, test_X)
-# [RF_Predicts,best_RF_Classifier] = RF_Classifier_func(train_X, train_Y, test_X)
-
-
-trained_RF_model = pickle.load(open('RF_Classifier_updated.pkl', 'rb'))
-trained_RF_model.best_estimator_
-trained_GB_model = pickle.load(open('RF_Classifier_updated.pkl', 'rb'))
-trained_GB_model.best_estimator_
-
-
-plot_auc_roc(trained_RF_model.best_estimator_, train_X, train_Y, nfolds=5,class_indicator ='Random Forest Classifier')
-plot_auc_roc(trained_GB_model.best_estimator_, train_X, train_Y, nfolds=5,class_indicator ='Gradient Boosting Classifier')
 
 
