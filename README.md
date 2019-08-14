@@ -61,8 +61,21 @@ Training:
 Now that the data is processed to deal with NaN values and outliers and some additional features are extracted, training can be started. In order to tackle this classification problem two different classifiers are considered in this code, namely Random Forest classifier and Gradient Boosting classifier. The performance of each of those classifiers are provided at the end of this report. 
 
 The first classifier is Random Forest classifier which is based on bagging of the predictions of different decision trees. The second classifier is Gradient Boosting classifier which is based on boosting the predictions of sub-predictors to improve the final performance of the classification. In both cases ‘RandomizedSearchCV’ is employed to find the best estimator according to the parameters that are given for each classifier. After finding the best estimator under each of the classifiers that estimator is applied to the test data to measure how accurate the trained model is. Note that when the model is trained according to the obtained best estimator, the model is saved using pickle package so that the model can be used any time after. In order to evaluate the accuracy of the trained model ‘cross validation’ procedure, more specifically K-fold cross validation, is employed. That would illustrate how accurate the trained model is over different sets of data. The performance of the model is then presented using ROC curve, which is plotted with True Positive Ration (TPR) vs False Positive Ratio (FPR). 
+<img width="633" alt="RF-10Folds" src="https://user-images.githubusercontent.com/51095441/63052207-c2997500-beac-11e9-8520-ee31e471414d.png">
+<img width="631" alt="GB-10Folds" src="https://user-images.githubusercontent.com/51095441/63052212-c5946580-beac-11e9-9871-d9c73c87ab32.png">
 
+It can be observed from the above figures that both classifiers can achieve a satisfying performance, while the performance of Gradient Boosting classifier is on average slightly better than that of Random Forest classifier. In order to further improve the performance, some other ideas can be implemented which are briefly discussed in the following part.
 
+Some More Ideas to improve the performance:
+There are some other methods that can be employed to improve either the accuracy or robustness of the model.
+
+- More steps in data preprocessing: Different methods for replacing the outliers and NaN values can be employed and investigating whether or not there is a relationship between having a NaN entry in one feature and an outlier entry in another feature of a specific client. 
+- Extracting more sophisticated features: This could illustrate hidden information in the relationship between different provided features may lead to significant improvement in the accuracy of the trained model. 
+- More sophisticated methods in parameter selection: As an example ‘GridSearchCV’ can be employed instead of ‘RandomizedSearchCV’.
+- Other methods for evaluating the cross validation: For instance, stratified K-fold cross validation can be used rather than the K-fold
+
+References:
+Working on this project I have investigated some different resources to gather some ideas and insights about different classification methods and the applications each classification method would fit. The very first resource was Kaggle website and the forums on GiveMeSomeScore project. The discussions and analysis provided there gave me a great idea to start this project. The Python website itself was also used for looking for different commands and libraries that I need to implement this project. Moreover, the website https://towardsdatascience.com was a big help in providing some insights on choosing and tuning the hyper parameters.  
 
 
 
